@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Retro Gridiron</title>
+  <title>Retro Gridiron - Enhanced</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -41,21 +41,49 @@
     </section>
 
     <div class="canvas-wrap">
-      <canvas id="gameCanvas" width="960" height="540"></canvas>
+      <canvas id="gameCanvas" width="1000" height="600"></canvas>
 
       <div id="message" class="message">
         <h2>RETRO GRIDIRON</h2>
-        <p>Pixel Football Action</p>
+        <p>Enhanced Football Action</p>
         <button id="startButton">START GAME</button>
+      </div>
+
+      <!-- Play Selection Menu -->
+      <div id="playMenu" class="play-menu hidden">
+        <h3>SELECT A PLAY</h3>
+        <div class="play-selection">
+          <button class="play-option" data-play="run">
+            <div class="play-icon">🏃</div>
+            <div class="play-name">RUN</div>
+            <div class="play-desc">3-5 yards</div>
+          </button>
+          <button class="play-option" data-play="pass">
+            <div class="play-icon">🎯</div>
+            <div class="play-name">PASS</div>
+            <div class="play-desc">Drag to aim & launch</div>
+          </button>
+          <button class="play-option" data-play="screen">
+            <div class="play-icon">⚡</div>
+            <div class="play-name">SCREEN</div>
+            <div class="play-desc">Quick pass</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pass Aiming Indicator -->
+      <div id="aimingIndicator" class="aiming-indicator hidden">
+        <div class="aim-text">Drag to Aim & Launch</div>
+        <div class="aim-power-bar">
+          <div id="powerMeter" class="power-meter"></div>
+        </div>
       </div>
     </div>
 
     <section class="controls">
-
       <div class="play-buttons">
-        <button id="runBtn" class="play-btn">🏃 RUN</button>
-        <button id="passBtn" class="play-btn">🎯 PASS</button>
-        <button id="snapBtn" class="play-btn">⚡ SNAP</button>
+        <button id="huddle-btn" class="play-btn">📋 CALL PLAY</button>
+        <button id="snap-btn" class="play-btn" disabled>⚡ SNAP</button>
       </div>
 
       <div class="mobile-controls">
@@ -68,15 +96,14 @@
 
       <p class="help">
         <b>Keyboard:</b>
-        Arrow Keys = Move ·
-        Space = SNAP ·
-        P = PASS ·
-        R = RUN
+        Arrow Keys = Move · Shift = Sprint · H = Huddle · Space = Snap
+        <br>
+        <b>Pass:</b> Click & drag on canvas to aim/launch · Farther drag = More power
       </p>
     </section>
 
     <footer>
-      <span id="resultText">Press START to begin.</span>
+      <span id="resultText">Click CALL PLAY to select your play.</span>
     </footer>
 
   </main>
