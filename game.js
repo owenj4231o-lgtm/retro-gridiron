@@ -17,8 +17,15 @@ const powerMeter = document.getElementById("powerMeter");
 const huddleBtn = document.getElementById("huddle-btn");
 const snapBtn = document.getElementById("snap-btn");
 
-const W = canvas.width;
-const H = canvas.height;
+// Canvas and viewport dimensions
+const CANVAS_W = canvas.width;
+const CANVAS_H = canvas.height;
+const FIELD_WIDTH = 3600;  // 120 yards * 30 pixels per yard
+const FIELD_HEIGHT = 800;  // Full field width
+
+// Camera/viewport
+let cameraX = 0;
+let cameraY = 0;
 
 let playerScore = 0;
 let cpuScore = 0;
@@ -54,15 +61,24 @@ const keys = {
   sprint: false
 };
 
+// Enhanced player with momentum
 const player = {
-  x: 350,
-  y: 300,
+  x: 600,
+  y: 400,
   width: 20,
   height: 35,
+  vx: 0,        // velocity x
+  vy: 0,        // velocity y
   speed: 3,
-  sprintSpeed: 5,
+  sprintSpeed: 5.5,
+  acceleration: 0.4,
+  friction: 0.85,
   color: "#ffdb35",
-  hasBall: true
+  hasBall: true,
+  isStunned: false,
+  stunTime: 0,
+  tackled: false,
+  tackleVel: 0
 };
 
 const defenders = [];
@@ -75,13 +91,18 @@ function createDefenders() {
   defenders.length = 0;
   for (let i = 0; i < 7; i++) {
     defenders.push({
-      x: 550 + Math.random() * 300,
-      y: 100 + Math.random() * 400,
+      x: 1200 + Math.random() * 400,
+      y: 150 + Math.random() * 500,
       width: 20,
       height: 35,
-      speed: 1.1 + Math.random() * 0.8,
+      vx: 0,
+      vy: 0,
+      speed: 2.2 + Math.random() * 0.6,
+      acceleration: 0.3,
+      friction: 0.88,
       color: "#e84a4a",
-      active: true
+      active: true,
+      targetLocked: false
     });
   }
 }
@@ -89,31 +110,43 @@ function createDefenders() {
 function createReceivers() {
   receivers.length = 0;
   receivers.push({
-    x: 480,
-    y: 150,
+    x: 900,
+    y: 200,
     width: 20,
     height: 35,
-    speed: 1.7,
+    vx: 0,
+    vy: 0,
+    speed: 2.8,
+    acceleration: 0.35,
+    friction: 0.87,
     route: "up",
     color: "#58a6ff",
     selected: false
   });
   receivers.push({
-    x: 490,
-    y: 420,
+    x: 920,
+    y: 600,
     width: 20,
     height: 35,
-    speed: 1.6,
+    vx: 0,
+    vy: 0,
+    speed: 2.7,
+    acceleration: 0.35,
+    friction: 0.87,
     route: "down",
     color: "#58a6ff",
     selected: false
   });
   receivers.push({
-    x: 400,
-    y: 300,
+    x: 800,
+    y: 400,
     width: 20,
     height: 35,
-    speed: 1.5,
+    vx: 0,
+    vy: 0,
+    speed: 2.5,
+    acceleration: 0.3,
+    friction: 0.86,
     route: "middle",
     color: "#58a6ff",
     selected: false
@@ -139,9 +172,14 @@ function selectPlay(play) {
 }
 
 function resetPlay() {
-  player.x = 350;
-  player.y = 300;
+  player.x = 600;
+  player.y = 400;
+  player.vx = 0;
+  player.vy = 0;
   player.hasBall = true;
+  player.isStunned = false;
+  player.stunTime = 0;
+  player.tackled = false;
   playActive = false;
   playStarted = false;
   passTarget = null;
@@ -159,6 +197,9 @@ function startPlay() {
   playActive = true;
   playStarted = true;
   player.hasBall = true;
+  player.isStunned = false;
+  player.vx = 0;
+  player.vy = 0;
 
   if (currentPlay === "run") {
     setTimeout(() => executeRunPlay(), 300);
@@ -172,12 +213,9 @@ function startPlay() {
 
 function executeRunPlay() {
   if (!playActive) return;
-  player.x += 80;
-  player.x = clamp(player.x, 80, W - 80);
-
-  const gained = Math.floor(4 + Math.random() * 5);
-  messageEl.textContent = `RUN! +${gained} yards`;
-  advanceBall(gained);
+  // Give player a burst of forward momentum
+  player.vx = 4;
+  messageEl.textContent = "RUN! Control with arrow keys!";
 }
 
 function executeScreenPass() {
@@ -246,9 +284,8 @@ function throwPass(power) {
 
   setTimeout(() => {
     if (!playActive) return;
-    // Power affects accuracy
     const catchChance = Math.max(0.2, Math.min(0.9, power / 200));
-    const distanceFactor = 1 - Math.min(bestDistance / 400, 0.5);
+    const distanceFactor = 1 - Math.min(bestDistance / 600, 0.5);
     const totalChance = catchChance * (0.5 + distanceFactor * 0.5);
 
     if (Math.random() < totalChance) {
@@ -283,34 +320,65 @@ function formatTime(seconds) {
   return `${min}:${sec}`;
 }
 
+// Enhanced physics-based movement with acceleration
 function movePlayer() {
   if (!playActive || !player.hasBall || isAiming) return;
 
-  const currentSpeed = keys.sprint ? player.sprintSpeed : player.speed;
+  const isMoving = keys.left || keys.right || keys.up || keys.down;
+  const currentMaxSpeed = keys.sprint ? player.sprintSpeed : player.speed;
 
-  if (keys.left) player.x -= currentSpeed;
-  if (keys.right) player.x += currentSpeed;
-  if (keys.up) player.y -= currentSpeed;
-  if (keys.down) player.y += currentSpeed;
+  // Apply acceleration/deceleration
+  if (keys.left) {
+    player.vx = Math.max(player.vx - player.acceleration, -currentMaxSpeed);
+  } else if (keys.right) {
+    player.vx = Math.min(player.vx + player.acceleration, currentMaxSpeed);
+  } else {
+    player.vx *= player.friction;
+  }
 
-  player.x = clamp(player.x, 80, W - 80);
-  player.y = clamp(player.y, 45, H - 45);
+  if (keys.up) {
+    player.vy = Math.max(player.vy - player.acceleration, -currentMaxSpeed);
+  } else if (keys.down) {
+    player.vy = Math.min(player.vy + player.acceleration, currentMaxSpeed);
+  } else {
+    player.vy *= player.friction;
+  }
+
+  // Apply velocity
+  player.x += player.vx;
+  player.y += player.vy;
+
+  // Boundary detection (out of bounds)
+  if (player.x < 100 || player.x > FIELD_WIDTH - 100 || player.y < 50 || player.y > FIELD_HEIGHT - 50) {
+    outOfBounds();
+    return;
+  }
+
+  // Check touchdown
+  if (playActive && player.hasBall && player.x > FIELD_WIDTH - 150) {
+    touchdown();
+  }
 }
 
 function moveReceivers() {
   if (!playActive) return;
   receivers.forEach(receiver => {
     if (receiver.route === "up") {
-      receiver.x += receiver.speed;
-      receiver.y -= 0.45;
+      receiver.vx = Math.min(receiver.vx + receiver.acceleration, receiver.speed);
+      receiver.vy = Math.max(receiver.vy - receiver.acceleration * 0.7, -receiver.speed * 0.6);
     } else if (receiver.route === "down") {
-      receiver.x += receiver.speed;
-      receiver.y += 0.45;
+      receiver.vx = Math.min(receiver.vx + receiver.acceleration, receiver.speed);
+      receiver.vy = Math.min(receiver.vy + receiver.acceleration * 0.7, receiver.speed * 0.6);
     } else if (receiver.route === "middle") {
-      receiver.x += receiver.speed;
+      receiver.vx = Math.min(receiver.vx + receiver.acceleration, receiver.speed);
+      receiver.vy *= receiver.friction;
     }
-    receiver.x = clamp(receiver.x, 50, W - 40);
-    receiver.y = clamp(receiver.y, 35, H - 35);
+
+    receiver.x += receiver.vx;
+    receiver.y += receiver.vy;
+
+    receiver.x = clamp(receiver.x, 100, FIELD_WIDTH - 100);
+    receiver.y = clamp(receiver.y, 50, FIELD_HEIGHT - 50);
   });
 }
 
@@ -333,15 +401,28 @@ function moveDefenders() {
 
     const dx = targetX - defender.x;
     const dy = targetY - defender.y;
-    const length = Math.sqrt(dx * dx + dy * dy);
+    const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (length > 1) {
-      defender.x += (dx / length) * defender.speed;
-      defender.y += (dy / length) * defender.speed;
+    if (distance > 2) {
+      const dirX = dx / distance;
+      const dirY = dy / distance;
+
+      defender.vx = Math.max(Math.min(defender.vx + dirX * defender.acceleration, defender.speed), -defender.speed);
+      defender.vy = Math.max(Math.min(defender.vy + dirY * defender.acceleration, defender.speed), -defender.speed);
+    } else {
+      defender.vx *= defender.friction;
+      defender.vy *= defender.friction;
     }
 
-    if (collision(player, defender) && player.hasBall) {
-      tackle();
+    defender.x += defender.vx;
+    defender.y += defender.vy;
+
+    defender.x = clamp(defender.x, 100, FIELD_WIDTH - 100);
+    defender.y = clamp(defender.y, 50, FIELD_HEIGHT - 50);
+
+    // Tackle detection
+    if (collision(player, defender) && player.hasBall && !player.isStunned) {
+      tackle(defender);
     }
     if (passTarget && collision(passTarget, defender) && !player.hasBall) {
       incompletePass();
@@ -349,12 +430,30 @@ function moveDefenders() {
   });
 }
 
-function tackle() {
+function tackle(defender) {
   playActive = false;
-  isAiming = false;
-  aimingIndicator.classList.add("hidden");
-  const gained = Math.max(1, Math.floor((player.x - 350) / 20));
+  player.isStunned = true;
+  player.stunTime = 30;
+  player.tackled = true;
+
+  // Add knockback momentum
+  const dx = player.x - defender.x;
+  const dy = player.y - defender.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len > 0) {
+    player.vx = (dx / len) * 1.5;
+    player.vy = (dy / len) * 1.5;
+  }
+
+  const gained = Math.max(1, Math.floor((player.x - 600) / 30));
   messageEl.textContent = `TACKLED! ${gained} yard${gained !== 1 ? "s" : ""}.`;
+  advanceBall(gained);
+}
+
+function outOfBounds() {
+  playActive = false;
+  const gained = Math.max(1, Math.floor((player.x - 600) / 30));
+  messageEl.textContent = `OUT OF BOUNDS! ${gained} yard${gained !== 1 ? "s" : ""}.`;
   advanceBall(gained);
 }
 
@@ -438,10 +537,12 @@ function completePass(receiver) {
   receiver.selected = false;
   player.x = receiver.x;
   player.y = receiver.y;
+  player.vx = receiver.vx * 0.8;
+  player.vy = receiver.vy * 0.8;
   player.hasBall = true;
   messageEl.textContent = "COMPLETE! Keep running!";
 
-  const gained = Math.max(5, Math.floor((receiver.x - 350) / 18));
+  const gained = Math.max(5, Math.floor((receiver.x - 600) / 30));
   ballPosition += gained;
   distance -= gained;
 
@@ -515,6 +616,19 @@ function endQuarter() {
   }, 2000);
 }
 
+function updateCamera() {
+  // Follow player with smooth camera
+  const targetCamX = player.x - CANVAS_W / 3;
+  const targetCamY = player.y - CANVAS_H / 2;
+
+  cameraX += (targetCamX - cameraX) * 0.15;
+  cameraY += (targetCamY - cameraY) * 0.15;
+
+  // Clamp camera to field bounds
+  cameraX = clamp(cameraX, 0, FIELD_WIDTH - CANVAS_W);
+  cameraY = clamp(cameraY, 0, FIELD_HEIGHT - CANVAS_H);
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -529,77 +643,99 @@ function collision(a, b) {
 }
 
 function drawField() {
-  ctx.fillStyle = "#238b46";
-  ctx.fillRect(0, 0, W, H);
-
-  for (let x = 0; x < W; x += 100) {
-    ctx.fillStyle = x % 200 === 0 ? "#238b46" : "#2b9950";
-    ctx.fillRect(x, 0, 100, H);
+  // Draw alternating yard line colors
+  for (let x = 0; x < FIELD_WIDTH; x += 300) {
+    ctx.fillStyle = x % 600 === 0 ? "#1d6b2f" : "#238b46";
+    ctx.fillRect(x - cameraX, 0 - cameraY, 300, FIELD_HEIGHT);
   }
 
+  // Sidelines
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(25, 20, 8, H - 40);
-  ctx.fillRect(W - 33, 20, 8, H - 40);
+  ctx.fillRect(50 - cameraX, 0 - cameraY, 8, FIELD_HEIGHT);
+  ctx.fillRect(FIELD_WIDTH - 58 - cameraX, 0 - cameraY, 8, FIELD_HEIGHT);
 
-  for (let x = 80; x < W - 50; x += 80) {
-    ctx.fillRect(x, 20, 4, H - 40);
-    ctx.fillRect(x, H / 2 - 30, 20, 4);
-    ctx.fillRect(x, H / 2 + 26, 20, 4);
+  // Yard markers
+  for (let x = 300; x < FIELD_WIDTH - 50; x += 300) {
+    ctx.fillRect(x - cameraX, 0 - cameraY, 4, FIELD_HEIGHT);
+
+    // Hash marks
+    for (let y = 100; y < FIELD_HEIGHT - 50; y += 200) {
+      ctx.fillRect(x - 20 - cameraX, y - cameraY, 40, 4);
+    }
   }
 
+  // End zones
   ctx.fillStyle = "#2466a8";
-  ctx.fillRect(0, 0, 65, H);
+  ctx.fillRect(0 - cameraX, 0 - cameraY, 100, FIELD_HEIGHT);
   ctx.fillStyle = "#9d3636";
-  ctx.fillRect(W - 65, 0, 65, H);
+  ctx.fillRect(FIELD_WIDTH - 100 - cameraX, 0 - cameraY, 100, FIELD_HEIGHT);
 
+  // End zone text
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 28px Courier New";
-
+  ctx.font = "bold 20px Courier New";
   ctx.save();
-  ctx.translate(35, H / 2);
+  ctx.translate(50 - cameraX, FIELD_HEIGHT / 2 - cameraY);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = "center";
-  ctx.fillText("HOME", 0, 10);
+  ctx.fillText("HOME", 0, 8);
   ctx.restore();
 
   ctx.save();
-  ctx.translate(W - 35, H / 2);
+  ctx.translate(FIELD_WIDTH - 50 - cameraX, FIELD_HEIGHT / 2 - cameraY);
   ctx.rotate(Math.PI / 2);
   ctx.textAlign = "center";
-  ctx.fillText("AWAY", 0, 10);
+  ctx.fillText("AWAY", 0, 8);
   ctx.restore();
-
-  for (let y = 60; y < H - 40; y += 35) {
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(300, y, 15, 3);
-    ctx.fillRect(685, y, 15, 3);
-  }
 }
 
 function drawPlayer() {
-  drawCharacter(player, "#ffd447", "#222");
+  const screenX = player.x - cameraX;
+  const screenY = player.y - cameraY;
+
+  // Stun animation
+  if (player.isStunned) {
+    ctx.fillStyle = "rgba(255, 100, 100, 0.4)";
+    ctx.fillRect(screenX - 15, screenY - 20, player.width + 30, player.height + 30);
+  }
+
+  drawCharacter(player, "#ffd447", "#222", screenX, screenY);
 
   if (player.hasBall) {
     ctx.fillStyle = "#8b4513";
-    ctx.fillRect(player.x + 13, player.y - 2, 10, 6);
+    ctx.fillRect(screenX + 13, screenY - 2, 10, 6);
     ctx.fillStyle = "#fff";
-    ctx.fillRect(player.x + 15, player.y + 1, 2, 2);
+    ctx.fillRect(screenX + 15, screenY + 1, 2, 2);
+  }
+
+  // Velocity indicator
+  if (Math.abs(player.vx) > 0.5 || Math.abs(player.vy) > 0.5) {
+    const speed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
+    ctx.strokeStyle = `rgba(255, 212, 71, ${Math.min(speed / 6, 0.8)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(screenX + player.width / 2, screenY + player.height / 2);
+    ctx.lineTo(
+      screenX + player.width / 2 + player.vx * 8,
+      screenY + player.height / 2 + player.vy * 8
+    );
+    ctx.stroke();
   }
 }
 
 function drawReceivers() {
   receivers.forEach(receiver => {
-    drawCharacter(receiver, receiver.color, "#222");
+    const screenX = receiver.x - cameraX;
+    const screenY = receiver.y - cameraY;
 
-    if (receiver.selected) {
-      ctx.strokeStyle = "#ffd447";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(
-        receiver.x - 5,
-        receiver.y - 8,
-        receiver.width + 10,
-        receiver.height + 10
-      );
+    // Only draw if on screen
+    if (screenX > -50 && screenX < CANVAS_W + 50 && screenY > -50 && screenY < CANVAS_H + 50) {
+      drawCharacter(receiver, receiver.color, "#222", screenX, screenY);
+
+      if (receiver.selected) {
+        ctx.strokeStyle = "#ffd447";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(screenX - 5, screenY - 8, receiver.width + 10, receiver.height + 10);
+      }
     }
   });
 }
@@ -607,19 +743,25 @@ function drawReceivers() {
 function drawDefenders() {
   defenders.forEach(defender => {
     if (!defender.active) return;
-    drawCharacter(defender, "#e74b4b", "#222");
+    const screenX = defender.x - cameraX;
+    const screenY = defender.y - cameraY;
+
+    // Only draw if on screen
+    if (screenX > -50 && screenX < CANVAS_W + 50 && screenY > -50 && screenY < CANVAS_H + 50) {
+      drawCharacter(defender, "#e74b4b", "#222", screenX, screenY);
+    }
   });
 }
 
-function drawCharacter(character, shirtColor, helmetColor) {
-  const x = character.x;
-  const y = character.y;
+function drawCharacter(character, shirtColor, helmetColor, screenX, screenY) {
+  const x = screenX;
+  const y = screenY;
 
   // Shadow
   ctx.fillStyle = "rgba(0,0,0,0.25)";
   ctx.fillRect(x - 2, y + character.height - 1, character.width + 4, 4);
 
-  // Head (improved)
+  // Head
   ctx.fillStyle = helmetColor;
   ctx.beginPath();
   ctx.arc(x + character.width / 2, y + 4, 5, 0, Math.PI * 2);
@@ -676,44 +818,55 @@ function drawCharacter(character, shirtColor, helmetColor) {
 function drawAimingLine() {
   if (!isAiming) return;
 
+  const screenX = player.x - cameraX;
+  const screenY = player.y - cameraY;
+
   ctx.strokeStyle = "rgba(255, 212, 71, 0.6)";
   ctx.lineWidth = 3;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
-  ctx.moveTo(player.x + player.width / 2, player.y + player.height / 2);
+  ctx.moveTo(screenX + player.width / 2, screenY + player.height / 2);
   ctx.lineTo(currentAimX, currentAimY);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Draw power indicator circle
   const circleSize = aimPower / 5;
   ctx.strokeStyle = "rgba(255, 212, 71, 0.8)";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(player.x + player.width / 2, player.y + player.height / 2, circleSize, 0, Math.PI * 2);
+  ctx.arc(screenX + player.width / 2, screenY + player.height / 2, circleSize, 0, Math.PI * 2);
   ctx.stroke();
 }
 
 function drawBall() {
   if (!passTarget || player.hasBall) return;
 
-  ctx.fillStyle = "#8b4513";
-  ctx.beginPath();
-  ctx.ellipse(passTarget.x + 8, passTarget.y - 12, 8, 4, -0.3, 0, Math.PI * 2);
-  ctx.fill();
+  const screenX = passTarget.x - cameraX;
+  const screenY = passTarget.y - cameraY;
 
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(passTarget.x + 3, passTarget.y - 12);
-  ctx.lineTo(passTarget.x + 13, passTarget.y - 12);
-  ctx.stroke();
+  if (screenX > -50 && screenX < CANVAS_W + 50 && screenY > -50 && screenY < CANVAS_H + 50) {
+    ctx.fillStyle = "#8b4513";
+    ctx.beginPath();
+    ctx.ellipse(screenX + 8, screenY - 12, 8, 4, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(screenX + 3, screenY - 12);
+    ctx.lineTo(screenX + 13, screenY - 12);
+    ctx.stroke();
+  }
 }
 
 function drawParticles() {
   particles.forEach(p => {
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x, p.y, p.size, p.size);
+    const screenX = p.x - cameraX;
+    const screenY = p.y - cameraY;
+    if (screenX > -10 && screenX < CANVAS_W + 10 && screenY > -10 && screenY < CANVAS_H + 10) {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(screenX, screenY, p.size, p.size);
+    }
   });
 }
 
@@ -721,8 +874,10 @@ function createConfetti() {
   particles = [];
   for (let i = 0; i < 100; i++) {
     particles.push({
-      x: Math.random() * W,
-      y: -Math.random() * 100,
+      x: player.x + Math.random() * 50 - 25,
+      y: player.y + Math.random() * 50 - 25,
+      vx: Math.random() * 6 - 3,
+      vy: Math.random() * -8,
       size: 4 + Math.random() * 5,
       speed: 2 + Math.random() * 5,
       color: ["#ffd447", "#ffffff", "#ff4b4b", "#4bd1ff"][Math.floor(Math.random() * 4)]
@@ -733,12 +888,14 @@ function createConfetti() {
 function updateParticles() {
   particles.forEach(p => {
     p.y += p.speed;
-    if (p.y > H) p.y = -10;
+    p.x += p.vx * 0.5;
+    p.vy += 0.2;
+    if (p.y > FIELD_HEIGHT) p.y = -10;
   });
 }
 
 function draw() {
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
   drawField();
   drawReceivers();
   drawDefenders();
@@ -752,14 +909,19 @@ function update() {
   if (!gameOver && gameStarted) {
     if (gameClock > 0) gameClock -= 0.016;
 
+    // Update stun
+    if (player.isStunned) {
+      player.stunTime--;
+      if (player.stunTime <= 0) {
+        player.isStunned = false;
+      }
+    }
+
     movePlayer();
     moveReceivers();
     moveDefenders();
     updateParticles();
-
-    if (playActive && player.hasBall && player.x > W - 80) {
-      touchdown();
-    }
+    updateCamera();
 
     updateUI();
   }
@@ -792,7 +954,6 @@ canvas.addEventListener("mousemove", (e) => {
   const dy = aimStartY - currentAimY;
   aimPower = Math.sqrt(dx * dx + dy * dy);
 
-  // Update power meter
   const maxPower = 200;
   const percentage = Math.min((aimPower / maxPower) * 100, 100);
   powerMeter.style.width = percentage + "%";
