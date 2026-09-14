@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Gridiron</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <main class="game-shell">
+
+    <header class="topbar">
+      <div>
+        <h1>RETRO GRIDIRON</h1>
+        <span class="subtitle">PIXEL FOOTBALL</span>
+      </div>
+
+      <div class="scoreboard">
+        <div>
+          <small>HOME</small>
+          <strong id="playerScore">0</strong>
+        </div>
+
+        <div class="clock">
+          <small>TIME</small>
+          <strong id="clockText">02:00</strong>
+        </div>
+
+        <div>
+          <small>AWAY</small>
+          <strong id="cpuScore">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="statusbar">
+      <span id="downText">1ST & 10</span>
+      <span id="ballText">Ball: 20</span>
+      <span id="quarter">Q1</span>
+    </section>
+
+    <div class="canvas-wrap">
+      <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+      <div id="message" class="message">
+        <h2>RETRO GRIDIRON</h2>
+        <p>Pixel Football Action</p>
+        <button id="startButton">START GAME</button>
+      </div>
+    </div>
+
+    <section class="controls">
+
+      <div class="play-buttons">
+        <button id="runBtn" class="play-btn">🏃 RUN</button>
+        <button id="passBtn" class="play-btn">🎯 PASS</button>
+        <button id="snapBtn" class="play-btn">⚡ SNAP</button>
+      </div>
+
+      <div class="mobile-controls">
+        <button id="leftBtn">◀</button>
+        <button id="upBtn">▲</button>
+        <button id="downBtn">▼</button>
+        <button id="rightBtn">▶</button>
+        <button id="sprintBtn">SPRINT</button>
+      </div>
+
+      <p class="help">
+        <b>Keyboard:</b>
+        Arrow Keys = Move ·
+        Space = SNAP ·
+        P = PASS ·
+        R = RUN
+      </p>
+    </section>
+
+    <footer>
+      <span id="resultText">Press START to begin.</span>
+    </footer>
+
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

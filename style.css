@@ -1,0 +1,290 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --green: #19733b;
+  --dark-green: #0d4023;
+  --light-green: #4caf50;
+  --yellow: #ffd447;
+  --white: #fff8df;
+  --red: #e54848;
+  --black: #111;
+  --panel: #20252a;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(#111 0 0) padding-box,
+    repeating-linear-gradient(
+      0deg,
+      #171717 0px,
+      #171717 4px,
+      #1d1d1d 4px,
+      #1d1d1d 8px
+    );
+
+  color: var(--white);
+  font-family: "Courier New", monospace;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 20px;
+}
+
+.game-shell {
+  width: min(100%, 1100px);
+  background: #15191c;
+  border: 5px solid #30363b;
+  box-shadow:
+    0 0 0 4px #080808,
+    12px 12px 0 #000;
+}
+
+.topbar {
+  min-height: 90px;
+  background: #252b30;
+  border-bottom: 4px solid #090909;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 12px 20px;
+}
+
+h1 {
+  color: var(--yellow);
+  font-size: clamp(22px, 4vw, 38px);
+  letter-spacing: 3px;
+  text-shadow: 3px 3px #000;
+}
+
+.subtitle {
+  color: #aaa;
+  font-size: 11px;
+  letter-spacing: 4px;
+}
+
+.scoreboard {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  text-align: center;
+}
+
+.scoreboard small {
+  display: block;
+  color: #999;
+  font-size: 10px;
+}
+
+.scoreboard strong {
+  display: block;
+  color: var(--yellow);
+  font-size: 30px;
+}
+
+.clock strong {
+  color: white;
+  font-size: 20px;
+}
+
+.statusbar {
+  min-height: 42px;
+  background: #0b0d0f;
+  border-bottom: 3px solid #30363b;
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  color: var(--yellow);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.canvas-wrap {
+  position: relative;
+  width: 100%;
+  background: #06170d;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.message {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 10;
+}
+
+.message.hidden {
+  display: none;
+}
+
+.message h2 {
+  color: var(--yellow);
+  font-size: clamp(28px, 6vw, 60px);
+  text-shadow: 5px 5px #000;
+  margin-bottom: 10px;
+}
+
+.message p {
+  color: white;
+  margin-bottom: 25px;
+}
+
+button {
+  border: 3px solid #000;
+  background: var(--yellow);
+  color: #111;
+
+  font-family: "Courier New", monospace;
+  font-weight: bold;
+
+  cursor: pointer;
+
+  box-shadow: 4px 4px 0 #000;
+
+  transition:
+    transform 0.05s,
+    box-shadow 0.05s;
+}
+
+button:hover {
+  filter: brightness(1.1);
+}
+
+button:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+#startButton {
+  padding: 13px 25px;
+  font-size: 18px;
+}
+
+.controls {
+  padding: 15px;
+  background: #20252a;
+  border-top: 4px solid #090909;
+}
+
+.play-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.play-btn {
+  min-width: 150px;
+  padding: 12px;
+  font-size: 15px;
+}
+
+.mobile-controls {
+  display: none;
+  margin-top: 15px;
+
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+}
+
+.mobile-controls button {
+  min-height: 48px;
+  font-size: 14px;
+}
+
+.help {
+  margin-top: 15px;
+  text-align: center;
+  color: #aaa;
+  font-size: 12px;
+}
+
+footer {
+  background: #0b0d0f;
+  border-top: 3px solid #30363b;
+  padding: 10px;
+  text-align: center;
+  color: #aaa;
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  body {
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .game-shell {
+    width: 100%;
+    border-width: 3px;
+    box-shadow: none;
+  }
+
+  .topbar {
+    padding: 8px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 8px;
+  }
+
+  .scoreboard {
+    gap: 8px;
+  }
+
+  .scoreboard strong {
+    font-size: 22px;
+  }
+
+  .statusbar {
+    font-size: 10px;
+  }
+
+  .play-buttons {
+    gap: 6px;
+  }
+
+  .play-btn {
+    min-width: 0;
+    flex: 1;
+    padding: 11px 4px;
+    font-size: 11px;
+  }
+
+  .mobile-controls {
+    display: grid;
+  }
+
+  .help {
+    font-size: 9px;
+  }
+}
