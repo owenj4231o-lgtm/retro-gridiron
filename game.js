@@ -42,7 +42,7 @@ let gameOver = false;
 let gameStarted = false;
 let inPlayMenu = false;
 let currentPlay = null;
-let selectedPlayCategory = null; // 'run' or 'pass'
+let selectedPlayCategory = null;
 
 let possession = "player";
 let particles = [];
@@ -63,21 +63,21 @@ const keys = {
   sprint: false
 };
 
-// ========== PLAY LIBRARY ==========
+// ========== COMPREHENSIVE PLAY LIBRARY ==========
 const PLAY_LIBRARY = {
   run: [
     {
       id: "power",
       name: "Power Run",
-      description: "Handoff to RB, follow the blockers",
+      description: "I-Form: RB hits it up the middle behind OL",
       formation: "I-Form",
       expectedGain: 4,
-      diagram: "powerRunDiagram"
+      diagram: "powerDiagram"
     },
     {
       id: "sweep",
       name: "Sweep",
-      description: "RB takes it outside, look for the edge",
+      description: "Shotgun: RB takes it to the edge",
       formation: "Shotgun",
       expectedGain: 5,
       diagram: "sweepDiagram"
@@ -85,7 +85,7 @@ const PLAY_LIBRARY = {
     {
       id: "dive",
       name: "Dive",
-      description: "Quick handoff up the middle",
+      description: "I-Form: Quick handoff up the gut",
       formation: "I-Form",
       expectedGain: 3,
       diagram: "diveDiagram"
@@ -93,7 +93,7 @@ const PLAY_LIBRARY = {
     {
       id: "trap",
       name: "Trap",
-      description: "Pull guard leads the way",
+      description: "Shotgun: Pull guard leads the way",
       formation: "Shotgun",
       expectedGain: 6,
       diagram: "trapDiagram"
@@ -101,7 +101,7 @@ const PLAY_LIBRARY = {
     {
       id: "toss",
       name: "Toss Sweep",
-      description: "Quick pitch to the outside",
+      description: "Shotgun: Quick pitch to outside",
       formation: "Shotgun",
       expectedGain: 4,
       diagram: "tossDiagram"
@@ -109,7 +109,7 @@ const PLAY_LIBRARY = {
     {
       id: "qbKeep",
       name: "QB Keep",
-      description: "QB runs it themselves",
+      description: "Shotgun: QB reads and runs",
       formation: "Shotgun",
       expectedGain: 3,
       diagram: "qbKeepDiagram"
@@ -117,7 +117,7 @@ const PLAY_LIBRARY = {
     {
       id: "stretch",
       name: "Stretch",
-      description: "Take it wide on the outside",
+      description: "Shotgun: Wide outside run",
       formation: "Shotgun",
       expectedGain: 5,
       diagram: "stretchDiagram"
@@ -125,7 +125,7 @@ const PLAY_LIBRARY = {
     {
       id: "draw",
       name: "Draw Play",
-      description: "Let defense get close, RB cuts upfield",
+      description: "Shotgun: Let D get close then cut",
       formation: "Shotgun",
       expectedGain: 7,
       diagram: "drawDiagram"
@@ -133,7 +133,7 @@ const PLAY_LIBRARY = {
     {
       id: "isolation",
       name: "Isolation",
-      description: "RB vs one defender",
+      description: "I-Form: RB vs one defender",
       formation: "I-Form",
       expectedGain: 4,
       diagram: "isolationDiagram"
@@ -143,7 +143,7 @@ const PLAY_LIBRARY = {
     {
       id: "slants",
       name: "Slant Routes",
-      description: "Quick hitters inside",
+      description: "Quick hitters cutting inside",
       formation: "3WR",
       receiverRoutes: ["slant", "slant", "slant"],
       diagram: "slantsDiagram"
@@ -151,7 +151,7 @@ const PLAY_LIBRARY = {
     {
       id: "outs",
       name: "Outs",
-      description: "Receivers break outside",
+      description: "Receivers break outside hard",
       formation: "3WR",
       receiverRoutes: ["out", "out", "out"],
       diagram: "outsDiagram"
@@ -159,9 +159,9 @@ const PLAY_LIBRARY = {
     {
       id: "deepPost",
       name: "Deep Post",
-      description: "Vertical routes down the field",
+      description: "Vertical routes down the seam",
       formation: "3WR",
-      receiverRoutes: ["deepPost", "deepPost", "deepPost"],
+      receiverRoutes: ["go", "go", "go"],
       diagram: "deepPostDiagram"
     },
     {
@@ -175,7 +175,7 @@ const PLAY_LIBRARY = {
     {
       id: "seam",
       name: "Seam Route",
-      description: "Up the middle vertically",
+      description: "TE up the middle, WRs underneath",
       formation: "2WR-TE",
       receiverRoutes: ["seam", "slant", "out"],
       diagram: "seamDiagram"
@@ -183,7 +183,7 @@ const PLAY_LIBRARY = {
     {
       id: "screens",
       name: "Screens",
-      description: "Quick pass behind the line",
+      description: "Quick pass behind the line to RB",
       formation: "Shotgun",
       receiverRoutes: ["screen", "screen", "screen"],
       diagram: "screensDiagram"
@@ -199,7 +199,7 @@ const PLAY_LIBRARY = {
     {
       id: "digs",
       name: "Dig Routes",
-      description: "Receivers dig across field",
+      description: "Receivers dig across the field",
       formation: "3WR",
       receiverRoutes: ["dig", "dig", "dig"],
       diagram: "digsDiagram"
@@ -207,7 +207,7 @@ const PLAY_LIBRARY = {
     {
       id: "go",
       name: "Go Routes",
-      description: "Straight down the field",
+      description: "Straight downfield race",
       formation: "3WR",
       receiverRoutes: ["go", "go", "go"],
       diagram: "goDiagram"
@@ -215,14 +215,14 @@ const PLAY_LIBRARY = {
     {
       id: "hook",
       name: "Hooks",
-      description: "Receivers stop and turn around",
+      description: "Receivers plant and turn around",
       formation: "3WR",
       receiverRoutes: ["hook", "hook", "hook"],
       diagram: "hookDiagram"
     },
     {
       id: "flood",
-      name: "Flood",
+      name: "Flood Concept",
       description: "Three receivers to one side",
       formation: "3WR",
       receiverRoutes: ["slant", "out", "go"],
@@ -230,8 +230,8 @@ const PLAY_LIBRARY = {
     },
     {
       id: "bunch",
-      name: "Bunch",
-      description: "Receivers run from tight formation",
+      name: "Bunch Formation",
+      description: "Tight receivers break apart",
       formation: "Bunch",
       receiverRoutes: ["slant", "out", "go"],
       diagram: "bunchDiagram"
@@ -254,7 +254,7 @@ const PLAY_LIBRARY = {
     },
     {
       id: "wheel",
-      name: "Wheel",
+      name: "Wheel Route",
       description: "RB leaks out for pass",
       formation: "I-Form",
       receiverRoutes: ["wheel", "slant", "go"],
@@ -263,7 +263,11 @@ const PLAY_LIBRARY = {
   ]
 };
 
-// Player object
+// Offensive players
+let offenseTeam = [];
+let defenseTeam = [];
+
+// Player object (controlled by user)
 const player = {
   x: 600,
   y: 400,
@@ -279,20 +283,15 @@ const player = {
   hasBall: true,
   isStunned: false,
   stunTime: 0,
-  role: "QB" // QB, RB, WR, TE, OL
+  role: "QB"
 };
 
-const offenseTeam = []; // All 11 offensive players
-const defenders = [];
-const receivers = [];
-let passTarget = null;
-
-// Create all 11 players on offense
-function createOffenseFormation(playId) {
-  offenseTeam.length = 0;
+// Create 11 player offensive formation
+function createOffenseFormation() {
+  offenseTeam = [];
   
-  // QB
-  const qb = {
+  // QB (position 0)
+  offenseTeam.push({
     x: 400,
     y: 400,
     width: 20,
@@ -300,27 +299,27 @@ function createOffenseFormation(playId) {
     vx: 0,
     vy: 0,
     speed: 2.5,
+    sprintSpeed: 4,
     acceleration: 0.3,
     friction: 0.88,
     color: "#ffdb35",
     role: "QB",
     hasBall: true,
-    active: true
-  };
-  offenseTeam.push(qb);
-  player.x = qb.x;
-  player.y = qb.y;
-  
-  // O-Line (5 players)
+    active: true,
+    route: null,
+    canCatch: false
+  });
+
+  // O-Line (5 players - positions 1-5)
   const olPositions = [
-    { x: 350, y: 350 }, // LT
-    { x: 350, y: 375 }, // LG
-    { x: 350, y: 400 }, // C
-    { x: 350, y: 425 }, // RG
-    { x: 350, y: 450 }  // RT
+    { x: 350, y: 350 },   // LT
+    { x: 350, y: 375 },   // LG
+    { x: 350, y: 400 },   // C
+    { x: 350, y: 425 },   // RG
+    { x: 350, y: 450 }    // RT
   ];
   
-  olPositions.forEach((pos, i) => {
+  olPositions.forEach((pos) => {
     offenseTeam.push({
       x: pos.x,
       y: pos.y,
@@ -328,17 +327,19 @@ function createOffenseFormation(playId) {
       height: 35,
       vx: 0,
       vy: 0,
-      speed: 2.0,
+      speed: 1.8,
+      sprintSpeed: 3,
       acceleration: 0.25,
       friction: 0.90,
       color: "#4a90e2",
       role: "OL",
       active: true,
-      blocking: false
+      blocking: false,
+      canCatch: false
     });
   });
-  
-  // RB (Running Back)
+
+  // RB (position 6)
   offenseTeam.push({
     x: 500,
     y: 400,
@@ -347,24 +348,26 @@ function createOffenseFormation(playId) {
     vx: 0,
     vy: 0,
     speed: 3.2,
+    sprintSpeed: 5,
     acceleration: 0.4,
     friction: 0.85,
     color: "#50c878",
     role: "RB",
     active: true,
-    route: "block"
+    route: "block",
+    hasBall: false,
+    canCatch: true
   });
-  
-  // 3 WR/TE based on play
-  const receiverCount = currentPlay.receiverRoutes ? currentPlay.receiverRoutes.length : 3;
+
+  // WR/TE receivers (positions 7-9)
   const receiverPositions = [
-    { x: 650, y: 250 },  // WR1
-    { x: 650, y: 550 },  // WR2
-    { x: 700, y: 400 }   // TE/WR3
+    { x: 650, y: 250 },   // WR1 (top)
+    { x: 650, y: 550 },   // WR2 (bottom)
+    { x: 700, y: 400 }    // TE/WR3 (slot)
   ];
   
   for (let i = 0; i < 3; i++) {
-    const route = currentPlay.receiverRoutes ? currentPlay.receiverRoutes[i] : "block";
+    const route = currentPlay && currentPlay.receiverRoutes ? currentPlay.receiverRoutes[i] : "block";
     offenseTeam.push({
       x: receiverPositions[i].x,
       y: receiverPositions[i].y,
@@ -372,39 +375,42 @@ function createOffenseFormation(playId) {
       height: 35,
       vx: 0,
       vy: 0,
-      speed: 2.8,
+      speed: 3.0,
+      sprintSpeed: 5.2,
       acceleration: 0.35,
       friction: 0.87,
       color: "#58a6ff",
       role: i === 2 ? "TE" : "WR",
       active: true,
       route: route,
-      selected: false
+      hasBall: false,
+      canCatch: true,
+      selected: false,
+      running: false
     });
   }
 }
 
-// Create defending team (11 players)
-function createDefense() {
-  defenders.length = 0;
+// Create 11 player defense
+function createDefenseFormation() {
+  defenseTeam = [];
   
-  // Defensive formation roughly mirrors offense
   const defPositions = [
-    { x: 1200, y: 400 },   // DE
+    { x: 1200, y: 300 },   // DE
     { x: 1250, y: 350 },   // DT
-    { x: 1250, y: 400 },   // DT
-    { x: 1250, y: 450 },   // DE
-    { x: 1300, y: 300 },   // LB
+    { x: 1250, y: 450 },   // DT
+    { x: 1200, y: 500 },   // DE
+    { x: 1300, y: 250 },   // OLB
     { x: 1300, y: 400 },   // MLB
-    { x: 1300, y: 500 },   // LB
-    { x: 1400, y: 250 },   // CB
-    { x: 1400, y: 550 },   // CB
+    { x: 1300, y: 550 },   // OLB
+    { x: 1400, y: 200 },   // CB
+    { x: 1400, y: 600 },   // CB
     { x: 1450, y: 350 },   // S
     { x: 1450, y: 450 }    // S
   ];
   
   defPositions.forEach((pos, i) => {
-    defenders.push({
+    defenseTeam.push({
       x: pos.x,
       y: pos.y,
       width: 20,
@@ -412,17 +418,18 @@ function createDefense() {
       vx: 0,
       vy: 0,
       speed: 2.4 + Math.random() * 0.4,
+      sprintSpeed: 4.2,
       acceleration: 0.35,
       friction: 0.88,
       color: "#e84a4a",
-      role: i < 2 ? "DL" : i < 6 ? "LB" : "DB",
+      role: i < 4 ? "DL" : i < 7 ? "LB" : "DB",
       active: true,
       targetLocked: false
     });
   });
 }
 
-// Show play selection menu
+// Show play category selection
 function showPlaySelectionMenu() {
   inPlayMenu = true;
   selectedPlayCategory = null;
@@ -450,7 +457,7 @@ function showPlaySelectionMenu() {
   });
 }
 
-// Show 3 play options for selected category
+// Show 3 random plays from category
 function showPlayOptions(category) {
   selectedPlayCategory = category;
   const plays = PLAY_LIBRARY[category];
@@ -459,11 +466,13 @@ function showPlayOptions(category) {
     <button class="back-btn" onclick="showPlaySelectionMenu()">← BACK</button>
     <div class="play-selection">`;
   
-  // Show 3 random plays from the category
+  // Get 3 random plays from pool
   const selectedPlays = getRandomPlays(plays, 3);
   selectedPlays.forEach(play => {
     html += `<button class="play-option" data-play="${play.id}" data-category="${category}">
-      <div class="play-diagram">${drawPlayDiagram(play, category)}</div>
+      <div class="play-diagram" style="font-size: 12px; color: #aaa; margin-bottom: 8px;">
+        ${getPlayDiagramASCII(play, category)}
+      </div>
       <div class="play-name">${play.name}</div>
       <div class="play-desc">${play.description}</div>
       <div class="expected-gain">Expected: ${play.expectedGain || '3-5'} yds</div>
@@ -482,21 +491,41 @@ function showPlayOptions(category) {
   });
 }
 
-// Get 3 random plays, cycle through all 9-15
+// Get random plays (cycles through full library)
 function getRandomPlays(plays, count) {
   const shuffled = [...plays].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 }
 
-// Draw simple play diagram
-function drawPlayDiagram(play, category) {
-  // Return SVG-like diagram or canvas drawing info
-  // For now, return simple ASCII-like representation
+// ASCII play diagrams
+function getPlayDiagramASCII(play, category) {
   if (category === "run") {
-    return "→ RB ↗ Blockers";
+    if (play.id === "power") return "═══ RB →→";
+    if (play.id === "sweep") return "RB ⤵";
+    if (play.id === "dive") return "RB ↓";
+    if (play.id === "trap") return "╗ RB →";
+    if (play.id === "toss") return "RB ⤴";
+    if (play.id === "qbKeep") return "QB →";
+    if (play.id === "stretch") return "RB ⤵⤵";
+    if (play.id === "draw") return "RB ↗";
+    if (play.id === "isolation") return "RB vs";
   } else {
-    return "QB → WR ↙ Routes";
+    if (play.id === "slants") return "↘↘↘";
+    if (play.id === "outs") return "↗↗↗";
+    if (play.id === "go") return "↑↑↑";
+    if (play.id === "crossers") return "→→→";
+    if (play.id === "seam") return "↑ ↘ ↗";
+    if (play.id === "screens") return "→ ← →";
+    if (play.id === "combo") return "↘ ↗ ↘";
+    if (play.id === "digs") return "→↓→";
+    if (play.id === "hook") return "↑ ↓ ↑";
+    if (play.id === "flood") return "↘ ↗ ↑";
+    if (play.id === "bunch") return "≡ routes";
+    if (play.id === "rub") return "X routes";
+    if (play.id === "mesh") return "X cross";
+    if (play.id === "wheel") return "RB ↗";
   }
+  return "▌▌▌";
 }
 
 function selectPlay(playId, category) {
@@ -515,10 +544,11 @@ function hidePlayMenu() {
 }
 
 function resetPlay() {
-  offenseTeam.length = 0;
-  createOffenseFormation(currentPlay ? currentPlay.id : null);
-  createDefense();
+  createOffenseFormation();
+  createDefenseFormation();
   
+  player.x = offenseTeam[0].x;
+  player.y = offenseTeam[0].y;
   player.vx = 0;
   player.vy = 0;
   player.hasBall = true;
@@ -527,7 +557,6 @@ function resetPlay() {
   
   playActive = false;
   playStarted = false;
-  passTarget = null;
   isAiming = false;
   aimingIndicator.classList.add("hidden");
   
@@ -552,26 +581,24 @@ function startPlay() {
 function executeRunPlay() {
   if (!playActive) return;
   
-  // Give RB momentum based on play type
-  const rb = offenseTeam.find(p => p.role === "RB");
+  const rb = offenseTeam[6]; // RB is at index 6
   if (rb) {
     rb.hasBall = true;
+    offenseTeam[0].hasBall = false; // QB loses ball
     player.hasBall = false;
     
-    // Different plays have different expected gains
     const expectedGain = currentPlay.expectedGain || 4;
     const randomVariance = Math.random() * 4 - 2;
     const actualGain = Math.max(0, expectedGain + randomVariance);
     
-    // Simulate run play
     setTimeout(() => {
       if (!playActive) return;
       
       const tackled = Math.random() < 0.4;
       if (tackled) {
-        messageEl.textContent = `${currentPlay.name} - TACKLED for ${Math.floor(actualGain)} yards`;
+        messageEl.textContent = `TACKLED for ${Math.floor(actualGain)} yards`;
       } else {
-        messageEl.textContent = `${currentPlay.name} - Gained ${Math.floor(actualGain)} yards`;
+        messageEl.textContent = `Gained ${Math.floor(actualGain)} yards`;
       }
       
       advanceBall(Math.floor(actualGain));
@@ -579,71 +606,84 @@ function executeRunPlay() {
   }
 }
 
+// Execute receiver routes
 function moveReceivers() {
   if (!playActive) return;
   
-  offenseTeam.forEach(player => {
-    if (player.role !== "WR" && player.role !== "TE") return;
+  offenseTeam.forEach((p, idx) => {
+    if (p.role !== "WR" && p.role !== "TE" && p.role !== "RB") return;
+    if (!p.route || p.route === "block") return;
+    if (p.hasBall) return; // Already running with ball
     
-    // Execute route based on play
-    const route = player.route;
+    const route = p.route;
+    const targetFieldPos = 1200; // How far downfield to go
+    
+    // Execute route behaviors
     if (route === "slant") {
-      player.vx = Math.min(player.vx + player.acceleration, player.speed);
-      player.vy = player.y < 400 ? Math.max(player.vy - player.acceleration * 0.5, -player.speed * 0.5) : Math.min(player.vy + player.acceleration * 0.5, player.speed * 0.5);
-    } else if (route === "go") {
-      player.vx = Math.min(player.vx + player.acceleration * 0.8, player.speed);
-      player.vy = player.y < 400 ? Math.max(player.vy - player.acceleration * 0.8, -player.speed * 0.8) : Math.min(player.vy + player.acceleration * 0.8, player.speed * 0.8);
+      p.vx = Math.min(p.vx + p.acceleration, p.speed);
+      p.vy = p.y < 400 ? Math.max(p.vy - p.acceleration * 0.5, -p.speed * 0.5) : Math.min(p.vy + p.acceleration * 0.5, p.speed * 0.5);
+    } else if (route === "go" || route === "deepPost") {
+      p.vx = Math.min(p.vx + p.acceleration * 0.8, p.speed);
+      p.vy = p.y < 400 ? Math.max(p.vy - p.acceleration * 0.8, -p.speed * 0.8) : Math.min(p.vy + p.acceleration * 0.8, p.speed * 0.8);
     } else if (route === "out") {
-      player.vx = Math.min(player.vx + player.acceleration * 0.6, player.speed * 0.6);
-      player.vy = player.y < 400 ? Math.max(player.vy - player.acceleration, -player.speed) : Math.min(player.vy + player.acceleration, player.speed);
+      p.vx = Math.min(p.vx + p.acceleration * 0.5, p.speed * 0.6);
+      p.vy = p.y < 400 ? Math.max(p.vy - p.acceleration, -p.speed) : Math.min(p.vy + p.acceleration, p.speed);
+    } else if (route === "in") {
+      p.vx = Math.min(p.vx + p.acceleration * 0.7, p.speed * 0.7);
+      p.vy = p.y > 400 ? Math.max(p.vy - p.acceleration * 0.5, -p.speed * 0.5) : Math.min(p.vy + p.acceleration * 0.5, p.speed * 0.5);
     } else if (route === "cross") {
-      player.vx = Math.min(player.vx + player.acceleration, player.speed);
-      player.vy *= player.friction;
+      p.vx = Math.min(p.vx + p.acceleration, p.speed);
+      p.vy *= p.friction;
     } else if (route === "seam") {
-      player.vx = Math.min(player.vx + player.acceleration * 0.7, player.speed * 0.7);
-      player.vy = player.y < 400 ? Math.max(player.vy - player.acceleration * 0.8, -player.speed * 0.8) : Math.min(player.vy + player.acceleration * 0.8, player.speed * 0.8);
+      p.vx = Math.min(p.vx + p.acceleration * 0.7, p.speed * 0.7);
+      p.vy = p.y < 400 ? Math.max(p.vy - p.acceleration * 0.8, -p.speed * 0.8) : Math.min(p.vy + p.acceleration * 0.8, p.speed * 0.8);
+    } else if (route === "dig") {
+      p.vx = Math.min(p.vx + p.acceleration * 0.6, p.speed * 0.6);
+      p.vy = Math.abs(p.vy) < 0.5 ? p.vy : p.vy * p.friction * 0.9;
+    } else if (route === "hook") {
+      if (p.x < 1000) {
+        p.vx = Math.min(p.vx + p.acceleration * 0.5, p.speed * 0.5);
+      } else {
+        p.vx *= p.friction;
+      }
+      p.vy *= p.friction;
+    } else if (route === "screen" || route === "wheel") {
+      p.vx = Math.min(p.vx + p.acceleration * 0.4, p.speed * 0.5);
+      p.vy = p.y < 400 ? Math.max(p.vy - p.acceleration * 0.3, -p.speed * 0.3) : Math.min(p.vy + p.acceleration * 0.3, p.speed * 0.3);
+    } else if (route === "rub") {
+      p.vx = Math.min(p.vx + p.acceleration, p.speed);
+      p.vy = (Math.random() - 0.5) * p.speed * 0.5;
     }
     
-    player.x += player.vx;
-    player.y += player.vy;
+    p.x += p.vx;
+    p.y += p.vy;
     
-    player.x = clamp(player.x, 100, FIELD_WIDTH - 100);
-    player.y = clamp(player.y, 50, FIELD_HEIGHT - 50);
+    p.x = clamp(p.x, 100, FIELD_WIDTH - 100);
+    p.y = clamp(p.y, 50, FIELD_HEIGHT - 50);
   });
 }
 
+// Defense chases ball carrier
 function moveDefenders() {
   if (!playActive) return;
   
-  defenders.forEach(defender => {
+  defenseTeam.forEach(defender => {
     if (!defender.active) return;
     
-    let targetX = player.x;
-    let targetY = player.y;
-    
-    // Find closest receiver if pass play
-    if (currentPlay.category === "pass") {
-      let closestReceiver = null;
-      let closestDist = Infinity;
-      
-      offenseTeam.forEach(oPlayer => {
-        if ((oPlayer.role === "WR" || oPlayer.role === "TE") && oPlayer.x > player.x) {
-          const dist = Math.hypot(oPlayer.x - defender.x, oPlayer.y - defender.y);
-          if (dist < closestDist) {
-            closestDist = dist;
-            closestReceiver = oPlayer;
-          }
-        }
+    // Find who has the ball
+    let ballCarrier = null;
+    if (offenseTeam[0].hasBall) ballCarrier = offenseTeam[0]; // QB
+    else if (offenseTeam[6].hasBall) ballCarrier = offenseTeam[6]; // RB
+    else {
+      offenseTeam.forEach(p => {
+        if (p.hasBall) ballCarrier = p;
       });
-      
-      if (closestReceiver) {
-        targetX = closestReceiver.x;
-        targetY = closestReceiver.y;
-      }
     }
     
-    const dx = targetX - defender.x;
-    const dy = targetY - defender.y;
+    if (!ballCarrier) return;
+    
+    const dx = ballCarrier.x - defender.x;
+    const dy = ballCarrier.y - defender.y;
     const distance = Math.hypot(dx, dy);
     
     if (distance > 2) {
@@ -662,10 +702,10 @@ function moveDefenders() {
     defender.x = clamp(defender.x, 100, FIELD_WIDTH - 100);
     defender.y = clamp(defender.y, 50, FIELD_HEIGHT - 50);
     
-    // Tackle detection
+    // Tackle check
     offenseTeam.forEach(oPlayer => {
       if (oPlayer.hasBall && collision(oPlayer, defender)) {
-        tackle();
+        tackle(oPlayer);
       }
     });
   });
@@ -674,11 +714,12 @@ function moveDefenders() {
 function throwPass(power) {
   if (!playActive) return;
   
+  // Find closest receiver who can catch
   let closestReceiver = null;
   let closestDist = Infinity;
   
   offenseTeam.forEach(oPlayer => {
-    if ((oPlayer.role === "WR" || oPlayer.role === "TE") && oPlayer.x > player.x) {
+    if ((oPlayer.role === "WR" || oPlayer.role === "TE" || oPlayer.role === "RB") && oPlayer.canCatch && oPlayer.x > player.x) {
       const dist = Math.hypot(oPlayer.x - player.x, oPlayer.y - player.y);
       if (dist < closestDist) {
         closestDist = dist;
@@ -692,9 +733,7 @@ function throwPass(power) {
     return;
   }
   
-  player.hasBall = false;
-  passTarget = closestReceiver;
-  closestReceiver.selected = true;
+  offenseTeam[0].hasBall = false;
   messageEl.textContent = "BALL IN THE AIR!";
   
   setTimeout(() => {
@@ -704,26 +743,31 @@ function throwPass(power) {
     const totalChance = catchChance * (0.6 + defenseProximity * 0.4);
     
     if (Math.random() < totalChance) {
-      completePass(closestReceiver);
+      completeCatch(closestReceiver);
     } else {
       incompletePass();
     }
   }, 600);
 }
 
-function completePass(receiver) {
+// Receiver catches and can now run with the ball
+function completeCatch(receiver) {
   playActive = true;
   isAiming = false;
   aimingIndicator.classList.add("hidden");
   
+  receiver.hasBall = true;
+  receiver.running = true;
+  receiver.selected = false;
+  
+  messageEl.textContent = "CAUGHT! RUN WITH IT!";
+  
+  // Move player control to receiver
   player.x = receiver.x;
   player.y = receiver.y;
   player.hasBall = true;
-  receiver.selected = false;
-  passTarget = null;
   
-  messageEl.textContent = "COMPLETE! Keep running!";
-  
+  // Receiver gains yards after catch
   const gained = Math.max(3, Math.floor((receiver.x - 600) / 30));
   ballPosition += gained;
   distance -= gained;
@@ -753,7 +797,7 @@ function incompletePass() {
   }, 1200);
 }
 
-function tackle() {
+function tackle(player) {
   playActive = false;
   player.isStunned = true;
   player.stunTime = 30;
@@ -881,6 +925,7 @@ function endQuarter() {
   }, 2000);
 }
 
+// Player movement with ball
 function movePlayer() {
   if (!playActive || !player.hasBall || isAiming) return;
   
@@ -995,19 +1040,24 @@ function drawPlayers() {
     if (screenX > -50 && screenX < CANVAS_W + 50 && screenY > -50 && screenY < CANVAS_H + 50) {
       drawCharacter(oPlayer, oPlayer.color, screenX, screenY);
       
-      if (oPlayer === player && Math.abs(player.vx) > 0.3 || Math.abs(player.vy) > 0.3) {
+      if (oPlayer.hasBall) {
+        ctx.fillStyle = "#8B4513";
+        ctx.fillRect(screenX + 12, screenY + 10, 8, 6);
+      }
+      
+      if (Math.abs(oPlayer.vx) > 0.3 || Math.abs(oPlayer.vy) > 0.3) {
         ctx.strokeStyle = "rgba(255, 212, 71, 0.6)";
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(screenX + 10, screenY + 17);
-        ctx.lineTo(screenX + 10 + player.vx * 5, screenY + 17 + player.vy * 5);
+        ctx.lineTo(screenX + 10 + oPlayer.vx * 5, screenY + 17 + oPlayer.vy * 5);
         ctx.stroke();
       }
     }
   });
   
   // Draw defense
-  defenders.forEach(def => {
+  defenseTeam.forEach(def => {
     const screenX = def.x - cameraX;
     const screenY = def.y - cameraY;
     
